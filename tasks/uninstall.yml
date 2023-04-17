@@ -1,0 +1,25 @@
+---
+
+- name: Check existence of Appsmith systemd service
+  ansible.builtin.stat:
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ appsmith_identifier }}.service"
+  register: appsmith_service_stat
+
+- when: appsmith_service_stat.stat.exists | bool
+  block:
+    - name: Ensure Appsmith systemd service is stopped
+      ansible.builtin.service:
+        name: "{{ appsmith_identifier }}"
+        state: stopped
+        enabled: false
+        daemon_reload: true
+
+    - name: Ensure Appsmith systemd service does not exist
+      ansible.builtin.file:
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ appsmith_identifier }}.service"
+        state: absent
+
+    - name: Ensure Appsmith path doesn't exist
+      ansible.builtin.file:
+        path: "{{ appsmith_base_path }}"
+        state: absent

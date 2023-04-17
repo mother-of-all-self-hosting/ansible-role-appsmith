@@ -1,0 +1,201 @@
+---
+
+# Project source code URL: https://github.com/appsmithorg/appsmith
+
+appsmith_enabled: true
+
+appsmith_identifier: appsmith
+
+appsmith_uid: ''
+appsmith_gid: ''
+
+appsmith_version: v1.9.15
+
+appsmith_scheme: https
+
+# The hostname at which appsmith is served.
+appsmith_hostname: ''
+
+# The path at which appsmith is served.
+# This value must either be `/` or not end with a slash (e.g. `/appsmith`).
+appsmith_path_prefix: /
+
+appsmith_base_path: "/{{ appsmith_identifier }}"
+appsmith_stacks_path: "{{ appsmith_base_path }}/stacks"
+
+appsmith_container_image: "{{ appsmith_container_image_registry_prefix }}appsmith/appsmith-ce:{{ appsmith_container_image_tag }}"
+appsmith_container_image_registry_prefix: docker.io/
+appsmith_container_image_tag: "{{ appsmith_version }}"
+appsmith_container_image_force_pull: "{{ appsmith_container_image.endswith(':latest') }}"
+
+# The base container network. It will be auto-created by this role if it doesn't exist already.
+appsmith_container_network: "{{ appsmith_identifier }}"
+
+# A list of additional container networks that the container would be connected to.
+# The role does not create these networks, so make sure they already exist.
+# Use this to expose this container to another reverse proxy, which runs in a different container network.
+appsmith_container_additional_networks: "{{ appsmith_container_additional_networks_auto + appsmith_container_additional_networks_custom }}"
+appsmith_container_additional_networks_auto: []
+appsmith_container_additional_networks_custom: []
+
+# Specifies how the container publishes its HTTP port
+#
+# Takes an "<ip>:<port>" value (e.g. "127.0.0.1:80"), just a port number or an empty string to not expose.
+appsmith_container_http_bind_port: ''
+
+# appsmith_container_labels_traefik_enabled controls whether labels to assist a Traefik reverse-proxy will be attached to the container.
+# See `../templates/labels.j2` for details.
+#
+# To inject your own other container labels, see `appsmith_container_labels_additional_labels`.
+appsmith_container_labels_traefik_enabled: true
+appsmith_container_labels_traefik_docker_network: "{{ appsmith_container_network }}"
+appsmith_container_labels_traefik_hostname: "{{ appsmith_hostname }}"
+# The path prefix must either be `/` or not end with a slash (e.g. `/appsmith`).
+appsmith_container_labels_traefik_path_prefix: "{{ appsmith_path_prefix }}"
+appsmith_container_labels_traefik_rule: "Host(`{{ appsmith_container_labels_traefik_hostname }}`){% if appsmith_container_labels_traefik_path_prefix != '/' %} && PathPrefix(`{{ appsmith_container_labels_traefik_path_prefix }}`){% endif %}"
+appsmith_container_labels_traefik_priority: 0
+appsmith_container_labels_traefik_entrypoints: web-secure
+appsmith_container_labels_traefik_tls: "{{ appsmith_container_labels_traefik_entrypoints != 'web' }}"
+appsmith_container_labels_traefik_tls_certResolver: default  # noqa var-naming
+
+# Controls which additional headers to attach to all HTTP requests.
+# To add your own custom request headers, use `appsmith_container_labels_traefik_additional_response_headers_custom`
+appsmith_container_labels_traefik_additional_request_headers: "{{ appsmith_container_labels_traefik_additional_request_headers_auto | combine(appsmith_container_labels_traefik_additional_request_headers_custom) }}"
+appsmith_container_labels_traefik_additional_request_headers_auto: {}
+appsmith_container_labels_traefik_additional_request_headers_custom: {}
+
+# Controls which additional headers to attach to all HTTP responses.
+# To add your own custom response headers, use `appsmith_container_labels_traefik_additional_response_headers_custom`
+appsmith_container_labels_traefik_additional_response_headers: "{{ appsmith_container_labels_traefik_additional_response_headers_auto | combine(appsmith_container_labels_traefik_additional_response_headers_custom) }}"
+appsmith_container_labels_traefik_additional_response_headers_auto: |
+  {{
+    {}
+    | combine ({'X-XSS-Protection': appsmith_http_header_xss_protection} if appsmith_http_header_xss_protection else {})
+    | combine ({'X-Frame-Options': appsmith_http_header_frame_options} if appsmith_http_header_frame_options else {})
+    | combine ({'X-Content-Type-Options': appsmith_http_header_content_type_options} if appsmith_http_header_content_type_options else {})
+    | combine ({'Content-Security-Policy': appsmith_http_header_content_security_policy} if appsmith_http_header_content_security_policy else {})
+    | combine ({'Permission-Policy': appsmith_http_header_content_permission_policy} if appsmith_http_header_content_permission_policy else {})
+    | combine ({'Strict-Transport-Security': appsmith_http_header_strict_transport_security} if appsmith_http_header_strict_transport_security and appsmith_container_labels_traefik_tls else {})
+  }}
+appsmith_container_labels_traefik_additional_response_headers_custom: {}
+
+# appsmith_container_labels_additional_labels contains a multiline string with additional labels to add to the container label file.
+# See `../templates/labels.j2` for details.
+#
+# Example:
+# appsmith_container_labels_additional_labels: |
+#   my.label=1
+#   another.label="here"
+appsmith_container_labels_additional_labels: ''
+
+# Specifies how often the container health-check will run.
+#
+# For Traefik based setups, it's important that the interval is short,
+# because the interval value also specifies the "initial wait time".
+# This is a Docker (moby) bug: https://github.com/moby/moby/issues/33410
+# Without a successful healthcheck, Traefik will not register the service for reverse-proxying.
+# Thus, the health interval determines the initial start-up time -- the smaller, the better.
+#
+# For non-Traefik setups, we use the default healthcheck interval (15s) to decrease overhead.
+appsmith_container_health_interval: "{{ '5s' if appsmith_container_labels_traefik_enabled else '15s' }}"
+
+# A list of additional "volumes" to mount in the container.
+#
+# See the `--mount` documentation for the `docker run` command.
+#
+# Example:
+# appsmith_container_additional_volumes:
+#   - type: bind
+#     src: /path/on/the/host
+#     dst: /data
+#   - type: bind
+#     src: /another-path/on/the/host
+#     dst: /read-only
+#     options: readonly
+appsmith_container_additional_volumes: []
+
+# A list of extra arguments to pass to the container
+appsmith_container_extra_arguments: []
+
+# Controls the APPSMITH_DISABLE_INTERCOM environment variable
+appsmith_environment_variable_appsmith_disable_intercom: true
+
+# Controls the APPSMITH_SIGNUP_DISABLED environment variable
+appsmith_environment_variable_appsmith_signup_disabled: true
+
+# Controls the APPSMITH_CLOUD_SERVICES_BASE_URL environment variable
+appsmith_environment_variable_appsmith_cloud_services_base_url: https://cs.appsmith.com
+
+# Controls the APPSMITH_DISABLE_TELEMETRY environment variable
+appsmith_environment_variable_appsmith_disable_telemetry: true
+
+# Controls the APPSMITH_CLIENT_LOG_LEVEL environment variable
+# Valid values: error, debug
+appsmith_environment_variable_appsmith_client_log_level: error
+
+# Additional environment variables.
+appsmith_environment_variables_additional_variables: ''
+
+# Specifies the value of the `X-XSS-Protection` header
+# Stops pages from loading when they detect reflected cross-site scripting (XSS) attacks.
+#
+# Learn more about it is here:
+# - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+# - https://portswigger.net/web-security/cross-site-scripting/reflected
+appsmith_http_header_xss_protection: "1; mode=block"
+
+# Specifies the value of the `X-Frame-Options` header which controls whether framing can happen.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+appsmith_http_header_frame_options: "{{ 'SAMEORIGIN' if appsmith_framing_prevention_enabled else '' }}"
+
+# Specifies the value of the `X-Content-Type-Options` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
+appsmith_http_header_content_type_options: nosniff
+
+# Specifies the value of the `Content-Security-Policy` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+appsmith_http_header_content_security_policy: |-
+  {{
+    "frame-ancestors 'self'"
+    if appsmith_framing_prevention_enabled else ''
+  }}
+
+# Specifies the value of the `Permission-Policy` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permission-Policy
+appsmith_http_header_content_permission_policy: "{{ 'interest-cohort=()' if appsmith_floc_optout_enabled else '' }}"
+
+# Specifies the value of the `Strict-Transport-Security` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+appsmith_http_header_strict_transport_security: "max-age=31536000; includeSubDomains{{ '; preload' if appsmith_hsts_preload_enabled else '' }}"
+
+# Controls whether to send a "Permissions-Policy interest-cohort=();" header along with all responses
+#
+# Learn more about what it is here:
+# - https://www.eff.org/deeplinks/2021/03/googles-floc-terrible-idea
+# - https://paramdeo.com/blog/opting-your-website-out-of-googles-floc-network
+# - https://amifloced.org/
+#
+# Of course, a better solution is to just stop using browsers (like Chrome), which participate in such tracking practices.
+# See: `appsmith_content_permission_policy`
+appsmith_floc_optout_enabled: true
+
+# Controls whether HTTP headers should be set which would prevent framing (embedding).
+appsmith_framing_prevention_enabled: true
+
+# Controls if HSTS preloading is enabled
+#
+# In its strongest and recommended form, the [HSTS policy](https://www.chromium.org/hsts) includes all subdomains, and
+# indicates a willingness to be "preloaded" into browsers:
+# `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
+# For more information visit:
+# - https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
+# - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+# - https://hstspreload.org/#opt-in
+# See: `appsmith_http_header_strict_transport_security`
+appsmith_hsts_preload_enabled: false
+
+# List of systemd services that appsmith.service depends on
+appsmith_systemd_required_services_list: "{{ appsmith_systemd_required_systemd_services_list_default + appsmith_systemd_required_systemd_services_list_auto + appsmith_systemd_required_systemd_services_list_custom }}"
+appsmith_systemd_required_systemd_services_list_default: ['docker.service']
+appsmith_systemd_required_systemd_services_list_auto: []
+appsmith_systemd_required_systemd_services_list_custom: []

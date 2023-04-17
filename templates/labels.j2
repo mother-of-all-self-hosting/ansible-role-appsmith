@@ -1,0 +1,52 @@
+{% if appsmith_container_labels_traefik_enabled %}
+traefik.enable=true
+
+{% if appsmith_container_labels_traefik_docker_network %}
+traefik.docker.network={{ appsmith_container_labels_traefik_docker_network }}
+{% endif %}
+
+{% set middlewares = [] %}
+
+{% if appsmith_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.{{ appsmith_identifier }}-slashless-redirect.redirectregex.regex=^({{ appsmith_container_labels_traefik_path_prefix | quote }})$
+traefik.http.middlewares.{{ appsmith_identifier }}-slashless-redirect.redirectregex.replacement=${1}/
+{% set middlewares = middlewares + [appsmith_identifier + '-slashless-redirect'] %}
+{% endif %}
+
+{% if appsmith_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.{{ appsmith_identifier }}-strip-prefix.stripprefix.prefixes={{ appsmith_container_labels_traefik_path_prefix }}
+{% set middlewares = middlewares + [appsmith_identifier + '-strip-prefix'] %}
+{% endif %}
+
+{% if appsmith_container_labels_traefik_additional_request_headers.keys() | length > 0 %}
+{% for name, value in appsmith_container_labels_traefik_additional_request_headers.items() %}
+traefik.http.middlewares.{{ appsmith_identifier }}-add-request-headers.headers.customrequestheaders.{{ name }}={{ value }}
+{% endfor %}
+{% set middlewares = middlewares + [appsmith_identifier + '-add-request-headers'] %}
+{% endif %}
+
+{% if appsmith_container_labels_traefik_additional_response_headers.keys() | length > 0 %}
+{% for name, value in appsmith_container_labels_traefik_additional_response_headers.items() %}
+traefik.http.middlewares.{{ appsmith_identifier }}-add-response-headers.headers.customresponseheaders.{{ name }}={{ value }}
+{% endfor %}
+{% set middlewares = middlewares + [appsmith_identifier + '-add-response-headers'] %}
+{% endif %}
+
+traefik.http.routers.{{ appsmith_identifier }}.rule={{ appsmith_container_labels_traefik_rule }}
+{% if appsmith_container_labels_traefik_priority | int > 0 %}
+traefik.http.routers.{{ appsmith_identifier }}.priority={{ appsmith_container_labels_traefik_priority }}
+{% endif %}
+traefik.http.routers.{{ appsmith_identifier }}.service={{ appsmith_identifier }}
+{% if middlewares | length > 0 %}
+traefik.http.routers.{{ appsmith_identifier }}.middlewares={{ middlewares | join(',') }}
+{% endif %}
+traefik.http.routers.{{ appsmith_identifier }}.entrypoints={{ appsmith_container_labels_traefik_entrypoints }}
+traefik.http.routers.{{ appsmith_identifier }}.tls={{ appsmith_container_labels_traefik_tls | to_json }}
+{% if appsmith_container_labels_traefik_tls %}
+traefik.http.routers.{{ appsmith_identifier }}.tls.certResolver={{ appsmith_container_labels_traefik_tls_certResolver }}
+{% endif %}
+
+traefik.http.services.{{ appsmith_identifier }}.loadbalancer.server.port=80
+{% endif %}
+
+{{ appsmith_container_labels_additional_labels }}

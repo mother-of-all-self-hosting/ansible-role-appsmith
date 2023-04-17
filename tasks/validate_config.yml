@@ -1,0 +1,41 @@
+---
+
+- name: Fail if required Appsmith settings not defined
+  ansible.builtin.fail:
+    msg: >
+      You need to define a required configuration setting (`{{ item }}`).
+  when: "vars[item] == ''"
+  with_items:
+    - appsmith_identifier
+    - appsmith_uid
+    - appsmith_gid
+    - appsmith_hostname
+    - appsmith_path_prefix
+    - appsmith_container_network
+
+- when: appsmith_container_labels_traefik_enabled | bool
+  block:
+    - name: Fail if required Appsmith Traefik settings not defined
+      ansible.builtin.fail:
+        msg: >-
+          You need to define a required configuration setting (`{{ item }}`).
+      when: "vars[item] == ''"
+      with_items:
+        - appsmith_container_labels_traefik_hostname
+        - appsmith_container_labels_traefik_path_prefix
+
+    - name: Fail if appsmith_container_labels_traefik_path_prefix is different than /
+      ansible.builtin.fail:
+        msg: >-
+          appsmith_container_labels_traefik_path_prefix (`{{ appsmith_container_labels_traefik_path_prefix }}`) must be `/`.
+          Lago does not support hosting under a subpath yet.
+      when: "appsmith_container_labels_traefik_path_prefix != '/'"
+
+    # We ensure it doesn't end with a slash, because we handle both (slash and no-slash).
+    # Knowing that `appsmith_container_labels_traefik_path_prefix` does not end with a slash
+    # ensures we know how to set these routes up without having to do "does it end with a slash" checks elsewhere.
+    - name: Fail if appsmith_container_labels_traefik_path_prefix ends with a slash
+      ansible.builtin.fail:
+        msg: >-
+          appsmith_container_labels_traefik_path_prefix (`{{ appsmith_container_labels_traefik_path_prefix }}`) must either be `/` or not end with a slash (e.g. `/appsmith`).
+      when: "appsmith_container_labels_traefik_path_prefix != '/' and appsmith_container_labels_traefik_path_prefix[-1] == '/'"

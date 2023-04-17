@@ -1,0 +1,50 @@
+#jinja2: lstrip_blocks: "True"
+[Unit]
+Description=Appsmith ({{ appsmith_identifier }})
+{% for service in appsmith_systemd_required_services_list %}
+Requires={{ service }}
+After={{ service }}
+{% endfor %}
+DefaultDependencies=no
+
+[Service]
+Type=simple
+Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} kill {{ appsmith_identifier }} 2>/dev/null || true'
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ appsmith_identifier }} 2>/dev/null || true'
+
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
+			--rm \
+			--name={{ appsmith_identifier }} \
+			--log-driver=none \
+			--network={{ appsmith_container_network }} \
+			{% if appsmith_container_http_bind_port %}
+			-p {{ appsmith_container_http_bind_port }}:80 \
+			{% endif %}
+			--env-file={{ appsmith_base_path }}/env \
+			--label-file={{ appsmith_base_path }}/labels \
+			--health-interval={{ appsmith_container_health_interval }} \
+			--mount type=bind,src={{ appsmith_stacks_path }},dst=/appsmith-stacks \
+			{% for volume in appsmith_container_additional_volumes %}
+			--mount type={{ volume.type | default('bind' if '/' in volume.src else 'volume') }},src={{ volume.src }},dst={{ volume.dst }}{{ (',' + volume.options) if volume.options | default('') else '' }} \
+			{% endfor %}
+			{% for arg in appsmith_container_extra_arguments %}
+			{{ arg }} \
+			{% endfor %}
+			{{ appsmith_container_image }}
+
+{% for network in appsmith_container_additional_networks %}
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ appsmith_identifier }}
+{% endfor %}
+
+ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ appsmith_identifier }}
+
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} kill {{ appsmith_identifier }} 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ appsmith_identifier }} 2>/dev/null || true'
+
+Restart=always
+RestartSec=30
+SyslogIdentifier={{ appsmith_identifier }}
+
+[Install]
+WantedBy=multi-user.target

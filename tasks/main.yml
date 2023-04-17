@@ -1,0 +1,20 @@
+---
+
+- block:
+    - when: appsmith_enabled | bool
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
+
+    - when: appsmith_enabled | bool
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
+  tags:
+    - setup-all
+    - setup-appsmith
+    - install-all
+    - install-appsmith
+
+- block:
+    - when: not appsmith_enabled | bool
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"
+  tags:
+    - setup-all
+    - setup-appsmith
