@@ -14,7 +14,7 @@ appsmith_uid: ''
 appsmith_gid: ''
 
 # renovate: datasource=docker depName=appsmith/appsmith-ce
-appsmith_version: v1.9.50
+appsmith_version: v1.53.1
 
 appsmith_scheme: https
 
