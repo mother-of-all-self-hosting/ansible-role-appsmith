@@ -29,8 +29,10 @@ appsmith_base_path: "/{{ appsmith_identifier }}"
 appsmith_stacks_path: "{{ appsmith_base_path }}/stacks"
 
 appsmith_container_image: "{{ appsmith_container_image_registry_prefix }}appsmith/appsmith-ce:{{ appsmith_container_image_tag }}"
-appsmith_container_image_registry_prefix: docker.io/
 appsmith_container_image_tag: "{{ appsmith_version }}"
+appsmith_container_image_registry_prefix: "{{ appsmith_container_image_registry_prefix_upstream }}"
+appsmith_container_image_registry_prefix_upstream: "{{ appsmith_container_image_registry_prefix_upstream_default }}"
+appsmith_container_image_registry_prefix_upstream_default: docker.io/
 appsmith_container_image_force_pull: "{{ appsmith_container_image.endswith(':latest') }}"
 
 # The base container network. It will be auto-created by this role if it doesn't exist already.
