@@ -98,7 +98,6 @@ appsmith_container_labels_traefik_additional_response_headers_auto: |
   {{
     {}
     | combine ({'X-XSS-Protection': appsmith_http_header_xss_protection} if appsmith_http_header_xss_protection else {})
-    | combine ({'X-Frame-Options': appsmith_http_header_frame_options} if appsmith_http_header_frame_options else {})
     | combine ({'X-Content-Type-Options': appsmith_http_header_content_type_options} if appsmith_http_header_content_type_options else {})
     | combine ({'Content-Security-Policy': appsmith_http_header_content_security_policy} if appsmith_http_header_content_security_policy else {})
     | combine ({'Permission-Policy': appsmith_http_header_content_permission_policy} if appsmith_http_header_content_permission_policy else {})
@@ -136,10 +135,6 @@ appsmith_container_extra_arguments: []
 # - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
 # - https://portswigger.net/web-security/cross-site-scripting/reflected
 appsmith_http_header_xss_protection: "1; mode=block"
-
-# Specifies the value of the `X-Frame-Options` header which controls whether framing can happen.
-# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
-appsmith_http_header_frame_options: "{{ 'SAMEORIGIN' if appsmith_framing_prevention_enabled else '' }}"
 
 # Specifies the value of the `X-Content-Type-Options` header.
 # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
