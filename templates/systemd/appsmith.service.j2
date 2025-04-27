@@ -11,6 +11,9 @@ Description=Appsmith ({{ appsmith_identifier }})
 Requires={{ service }}
 After={{ service }}
 {% endfor %}
+{% for service in appsmith_systemd_wanted_services_list %}
+Wants={{ service }}
+{% endfor %}
 DefaultDependencies=no
 
 [Service]
