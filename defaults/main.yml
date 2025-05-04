@@ -46,6 +46,9 @@ appsmith_container_http_bind_port: ''
 # The base container network. It will be auto-created by this role if it doesn't exist already.
 appsmith_container_network: "{{ appsmith_identifier }}"
 
+# The port number in the container
+appsmith_container_http_port: 80
+
 # A list of additional container networks that the container would be connected to.
 # The role does not create these networks, so make sure they already exist.
 # Use this to expose this container to another reverse proxy, which runs in a different container network.
