@@ -22,10 +22,10 @@ appsmith_version: v1.9.50
 appsmith_uid: ''
 appsmith_gid: ''
 
-appsmith_scheme: https
-
 # The hostname at which appsmith is served.
 appsmith_hostname: ''
+
+appsmith_scheme: https
 
 # The path at which appsmith is served.
 # This value must either be `/` or not end with a slash (e.g. `/appsmith`).
