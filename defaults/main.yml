@@ -194,21 +194,61 @@ appsmith_systemd_required_systemd_services_list_custom: []
 # List of systemd services that the Appsmith systemd service wants
 appsmith_systemd_wanted_services_list: []
 
-# Controls the APPSMITH_DISABLE_INTERCOM environment variable
-appsmith_environment_variable_appsmith_disable_intercom: true
+# Controls environment variables for Sentry
+appsmith_environment_variable_appsmith_sentry_dsn: ''
+appsmith_environment_variable_appsmith_sentry_environment: ''
+
+# Controls an environment variable for Smart Lock
+appsmith_environment_variable_appsmith_smart_look_id: ''
+
+# Controls environment variables for Google OAuth
+appsmith_environment_variable_appsmith_oauth2_google_client_id: ''
+appsmith_environment_variable_appsmith_oauth2_google_client_secret: ''
+
+# Controls environment variables for GitHub OAuth
+appsmith_environment_variable_appsmith_oauth2_github_client_id: ''
+appsmith_environment_variable_appsmith_oauth2_github_client_secret: ''
+
+# Controls an environment variable for Form Login
+# Set to true to turn off the default username and password login
+appsmith_environment_variable_appsmith_form_login_disabled: ''
 
 # Controls the APPSMITH_SIGNUP_DISABLED environment variable
 appsmith_environment_variable_appsmith_signup_disabled: true
 
-# Controls the APPSMITH_CLOUD_SERVICES_BASE_URL environment variable
-appsmith_environment_variable_appsmith_cloud_services_base_url: https://cs.appsmith.com
-
-# Controls the APPSMITH_DISABLE_TELEMETRY environment variable
-appsmith_environment_variable_appsmith_disable_telemetry: true
+# Controls an environment variable for Segment
+appsmith_environment_variable_appsmith_segment_key: ''
 
 # Controls the APPSMITH_CLIENT_LOG_LEVEL environment variable
 # Valid values: error, debug
 appsmith_environment_variable_appsmith_client_log_level: error
 
+# Controls environment variables for email server
+appsmith_environment_variable_appsmith_mail_enabled: ''
+appsmith_environment_variable_appsmith_mail_port: ''
+appsmith_environment_variable_appsmith_mail_username: ''
+appsmith_environment_variable_appsmith_mail_password: ''
+appsmith_environment_variable_appsmith_mail_from: ''
+
+# Controls environment variables for email server features
+appsmith_environment_variable_appsmith_mail_smtp_auth: ''
+appsmith_environment_variable_appsmith_mail_smtp_tls_enabled: ''
+
+# Controls the APPSMITH_DISABLE_TELEMETRY environment variable
+appsmith_environment_variable_appsmith_disable_telemetry: true
+
+# Controls the APPSMITH_CLOUD_SERVICES_BASE_URL environment variable
+appsmith_environment_variable_appsmith_cloud_services_base_url: https://release-cs.appsmith.com
+
+# Controls environment variables for Google reCAPTCHA
+appsmith_environment_variable_appsmith_recaptcha_site_key: ''
+appsmith_environment_variable_appsmith_recaptcha_secret_key: ''
+appsmith_environment_variable_appsmith_recaptcha_enabled: ''
+
+# Controls the APPSMITH_DISABLE_INTERCOM environment variable
+appsmith_environment_variable_appsmith_disable_intercom: true
+
 # Additional environment variables.
+# See https://docs.appsmith.com/getting-started/setup/environment-variables
+# and https://github.com/appsmithorg/appsmith/blob/release/.env.example
 appsmith_environment_variables_additional_variables: ''
