@@ -224,6 +224,7 @@ appsmith_environment_variable_appsmith_client_log_level: error
 
 # Controls environment variables for email server
 appsmith_environment_variable_appsmith_mail_enabled: ''
+appsmith_environment_variable_appsmith_mail_host: ''
 appsmith_environment_variable_appsmith_mail_port: ''
 appsmith_environment_variable_appsmith_mail_username: ''
 appsmith_environment_variable_appsmith_mail_password: ''
