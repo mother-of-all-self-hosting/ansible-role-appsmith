@@ -48,3 +48,4 @@
   ansible.builtin.template:
     src: "{{ role_path }}/templates/systemd/appsmith.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ appsmith_identifier }}.service"
+    mode: 0644
