@@ -4,6 +4,7 @@
 
 ---
 - name: Perform Appsmith installation tasks
+  when: appsmith_enabled | bool
   tags:
     - setup-all
     - setup-appsmith
@@ -11,17 +12,15 @@
     - install-appsmith
   block:
     - name: Validate Appsmith configuration
-      when: appsmith_enabled | bool
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
     - name: Install Appsmith
-      when: appsmith_enabled | bool
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
 
 - name: Perform Appsmith uninstallation tasks
+  when: not appsmith_enabled | bool
   tags:
     - setup-all
     - setup-appsmith
   block:
     - name: Uninstall Appsmith
-      when: not appsmith_enabled | bool
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"
