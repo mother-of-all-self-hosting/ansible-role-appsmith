@@ -16,7 +16,7 @@ appsmith_base_path: "/{{ appsmith_identifier }}"
 appsmith_stacks_path: "{{ appsmith_base_path }}/stacks"
 
 # renovate: datasource=docker depName=appsmith/appsmith-ce
-appsmith_version: v1.53.1
+appsmith_version: v1.73.1
 
 appsmith_uid: ''
 appsmith_gid: ''
