@@ -43,7 +43,7 @@
       ansible.builtin.fail:
         msg: >-
           appsmith_container_labels_traefik_path_prefix (`{{ appsmith_container_labels_traefik_path_prefix }}`) must be `/`.
-          Lago does not support hosting under a subpath yet.
+          Appsmith does not support hosting under a subpath yet.
       when: "appsmith_container_labels_traefik_path_prefix != '/'"
 
     # We ensure it doesn't end with a slash, because we handle both (slash and no-slash).
