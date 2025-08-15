@@ -10,6 +10,7 @@ SPDX-FileCopyrightText: 2022 Julian Foad
 SPDX-FileCopyrightText: 2022 Warren Bailey
 SPDX-FileCopyrightText: 2023 Antonis Christofides
 SPDX-FileCopyrightText: 2023 Felix Stupp
+SPDX-FileCopyrightText: 2023 Julian-Samuel Gebühr
 SPDX-FileCopyrightText: 2023 Pierre 'McFly' Marty
 SPDX-FileCopyrightText: 2024 - 2025 Suguru Hirahara
 
@@ -18,13 +19,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Setting up Appsmith
 
-This is an [Ansible](https://www.ansible.com/) role which installs [Appsmith](https://github.com/httpjamesm/Appsmith) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
+This is an [Ansible](https://www.ansible.com/) role which installs [Appsmith](https://www.appsmith.com) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
 
-Appsmith allows you to view StackOverflow threads without exposing your IP address, browsing habits, and other browser fingerprinting data to the website.
+Appsmith is an open-source platform that enables developers to build and deploy custom internal tools and applications without writing code.
 
-See the project's [documentation](https://github.com/httpjamesm/Appsmith/blob/main/README.md) to learn what Appsmith does and why it might be useful to you.
-
-[<img src="assets/home_dark.webp" title="Home screen in dark mode" width="600" alt="Home screen in dark mode">](assets/home_dark.webp) [<img src="assets/question_dark.webp" title="Question in dark mode" width="600" alt="Question in dark mode">](assets/question_dark.webp) [<img src="assets/answers_light.webp" title="Answer in light mode" width="600" alt="Answer in light mode">](assets/answers_light.webp)
+See the project's [documentation](https://docs.appsmith.com/) to learn what Appsmith does and why it might be useful to you.
 
 ## Adjusting the playbook configuration
 
@@ -68,9 +67,15 @@ Take a look at:
 
 - [`defaults/main.yml`](../defaults/main.yml) for some variables that you can customize via your `vars.yml` file. You can override settings (even those that don't have dedicated playbook variables) using the `appsmith_environment_variables_additional_variables` variable
 
-See its [`docker-compose.example.yml`](https://github.com/httpjamesm/Appsmith/blob/main/docker-compose.example.yml) for a complete list of Appsmith's config options that you could put in `appsmith_environment_variables_additional_variables`.
-
 ## Installing
+
+It is recommended to install Appsmith with public registration enabled at first, create your user account, and disable public registration unless you need it.
+
+By default, public registration on the instance is disabled. You can enable it by adding the following configuration to your `vars.yml` file:
+
+```yaml
+appsmith_environment_variable_appsmith_signup_disabled: false
+```
 
 After configuring the playbook, run the installation command of your playbook as below:
 
@@ -78,15 +83,15 @@ After configuring the playbook, run the installation command of your playbook as
 ansible-playbook -i inventory/hosts setup.yml --tags=setup-all,start
 ```
 
+To disable public registration, remove the configuration and re-run the same command.
+
 If you use the MASH playbook, the shortcut commands with the [`just` program](https://github.com/mother-of-all-self-hosting/mash-playbook/blob/main/docs/just.md) are also available: `just install-all` or `just setup-all`
 
 ## Usage
 
-After running the command for installation, Appsmith becomes available at the specified hostname like `https://example.com`.
+After running the command for installation, the Appsmith instance becomes available at the URL specified with `appsmith_hostname`. With the configuration above, the service is hosted at `https://example.com`.
 
-[Libredirect](https://libredirect.github.io/), an extension for Firefox and Chromium-based desktop browsers, has support for redirections to Appsmith. See [this section](https://github.com/httpjamesm/Appsmith/blob/main/README.md#how-to-make-stack-overflow-links-take-you-to-appsmith-automatically) on the official documentation for more information.
-
-If you would like to make your instance public so that it can be used by anyone including Libredirect, please consider to send a PR to the [upstream project](https://github.com/httpjamesm/Appsmith) to add yours to [`instances.json`](https://github.com/httpjamesm/Appsmith/blob/main/instances.json), which Libredirect automatically fetches using a script (see [this FAQ entry](https://libredirect.github.io/faq.html#where_the_hell_are_those_instances_coming_from)).
+To get started, open the URL with a web browser, and create the first user from the web interface.
 
 ## Troubleshooting
 
