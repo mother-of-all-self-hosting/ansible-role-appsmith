@@ -183,7 +183,10 @@ appsmith_systemd_required_services_list_auto: []
 appsmith_systemd_required_services_list_custom: []
 
 # List of systemd services that the Appsmith systemd service wants
-appsmith_systemd_wanted_services_list: []
+appsmith_systemd_wanted_services_list: "{{ appsmith_systemd_wanted_services_list_default + appsmith_systemd_wanted_services_list_auto + appsmith_systemd_wanted_services_list_custom }}"
+appsmith_systemd_wanted_services_list_default: []
+appsmith_systemd_wanted_services_list_auto: []
+appsmith_systemd_wanted_services_list_custom: []
 
 # Controls environment variables for Sentry
 appsmith_environment_variable_appsmith_sentry_dsn: ''
