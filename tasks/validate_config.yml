@@ -27,6 +27,12 @@
     - appsmith_path_prefix
     - appsmith_container_network
 
+- name: Fail if Appsmith logging level is invalid
+  ansible.builtin.fail:
+    msg: >-
+      appsmith_environment_variable_appsmith_client_log_level must be 'error' or 'debug'
+  when: "appsmith_environment_variable_appsmith_client_log_level not in ['error', 'debug']"
+
 - name: Run if Traefik is enabled
   when: appsmith_container_labels_traefik_enabled | bool
   block:
