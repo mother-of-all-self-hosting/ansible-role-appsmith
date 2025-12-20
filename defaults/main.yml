@@ -188,6 +188,9 @@ appsmith_systemd_wanted_services_list_default: []
 appsmith_systemd_wanted_services_list_auto: []
 appsmith_systemd_wanted_services_list_custom: []
 
+# Specify the timezone
+appsmith_environment_variables_tz: UTC
+
 # Controls environment variables for Sentry
 appsmith_environment_variable_appsmith_sentry_dsn: ""
 appsmith_environment_variable_appsmith_sentry_environment: ""
