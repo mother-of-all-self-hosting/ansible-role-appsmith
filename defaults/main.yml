@@ -122,7 +122,7 @@ appsmith_container_labels_additional_labels_custom: {}
 # For non-Traefik setups, we use the default healthcheck interval (15s) to decrease overhead.
 appsmith_container_health_interval: "{{ '5s' if appsmith_container_labels_traefik_enabled else '15s' }}"
 
-# A list of extra arguments to pass to the container
+# A list of extra arguments to pass to the container (`docker create` command)
 appsmith_container_extra_arguments: "{{ appsmith_container_extra_arguments_auto + appsmith_container_extra_arguments_custom }}"
 appsmith_container_extra_arguments_auto: []
 appsmith_container_extra_arguments_custom: []
