@@ -110,6 +110,7 @@ appsmith_container_labels_traefik_additional_response_headers_custom: {}
 appsmith_container_labels_additional_labels: "{{ appsmith_container_labels_additional_labels_auto + appsmith_container_labels_additional_labels_custom }}"
 appsmith_container_labels_additional_labels_auto: []
 appsmith_container_labels_additional_labels_custom: []
+
 # Specifies how often the container health-check will run.
 #
 # For Traefik based setups, it's important that the interval is short,
