@@ -55,4 +55,6 @@ traefik.http.routers.{{ appsmith_identifier }}.tls.certResolver={{ appsmith_cont
 traefik.http.services.{{ appsmith_identifier }}.loadbalancer.server.port={{ appsmith_container_http_port }}
 {% endif %}
 
-{{ appsmith_container_labels_additional_labels }}
+{% for arg in appsmith_container_labels_additional_labels %}
+{{ arg }}
+{% endfor %}
