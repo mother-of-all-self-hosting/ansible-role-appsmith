@@ -104,7 +104,7 @@ appsmith_container_labels_traefik_additional_response_headers_custom: {}
 # To add your own custom labels, use `appsmith_container_labels_additional_labels_custom`
 #
 # Example:
-# appsmith_container_labels_additional_labels_custom: |
+# appsmith_container_labels_additional_labels_custom:
 #   - my.label=1
 #   - another.label="here"
 appsmith_container_labels_additional_labels: "{{ appsmith_container_labels_additional_labels_auto + appsmith_container_labels_additional_labels_custom }}"
