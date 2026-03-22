@@ -33,20 +33,20 @@
     source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
     force_source: "{{ appsmith_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
     force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else appsmith_container_image_force_pull }}"
-  register: appsmith_container_image_pull_result
+  register: appsmith_container_image_pull_result_ansible_module
   retries: "{{ devture_playbook_help_container_retries_count }}"
   delay: "{{ devture_playbook_help_container_retries_delay }}"
-  until: appsmith_container_image_pull_result is not failed
+  until: appsmith_container_image_pull_result_ansible_module is not failed
 
 - name: Ensure Appsmith container image is pulled via ansible.builtin.command
   when: devture_systemd_docker_base_container_image_pull_method == 'command'
   ansible.builtin.command:
     cmd: "{{ devture_systemd_docker_base_host_command_docker }} pull {{ appsmith_container_image }}"
-  register: appsmith_container_image_pull_result
+  register: appsmith_container_image_pull_result_command
   retries: "{{ devture_playbook_help_container_retries_count }}"
   delay: "{{ devture_playbook_help_container_retries_delay }}"
-  until: appsmith_container_image_pull_result is not failed
-  changed_when: "'Downloaded newer image' in appsmith_container_image_pull_result.stdout"
+  until: appsmith_container_image_pull_result_command is not failed
+  changed_when: "'Downloaded newer image' in appsmith_container_image_pull_result_command.stdout"
 
 - name: Ensure Appsmith container network is created via community.docker.docker_network
   when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
@@ -82,5 +82,6 @@
       {{
         appsmith_support_files_result.changed | default(false)
         or appsmith_systemd_service_result.changed | default(false)
-        or appsmith_container_image_pull_result.changed | default(false)
+        or appsmith_container_image_pull_result_ansible_module.changed | default(false)
+        or appsmith_container_image_pull_result_command.changed | default(false)
       }}
