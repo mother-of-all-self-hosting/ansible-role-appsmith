@@ -14,6 +14,7 @@
     - { "old": "appsmith_systemd_required_systemd_services_list_auto", "new": "appsmith_systemd_required_services_list_auto" }
     - { "old": "appsmith_systemd_required_systemd_services_list_custom", "new": "appsmith_systemd_required_services_list_custom" }
     - { "old": "appsmith_http_header_content_permission_policy", "new": "appsmith_http_header_permissions_policy" }
+    - { "old": "appsmith_container_image_force_pull", "new": "<removed> (the new community.docker.docker_image_pull module handles this natively)" }
 
 - name: Fail if required Appsmith settings not defined
   ansible.builtin.fail:
