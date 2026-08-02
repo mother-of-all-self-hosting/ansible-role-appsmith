@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 Suguru Hirahara
+# SPDX-FileCopyrightText: 2026 spatterlight
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Verify Appsmith systemd service
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Wait for Appsmith service to become active (up to 180s)
+      ansible.builtin.systemd:
+        name: appsmith.service
+      register: appsmith_service
+      until: appsmith_service.status.ActiveState == 'active'
+      retries: 36
+      delay: 5
+
+    - name: Assert Appsmith service is active
+      ansible.builtin.assert:
+        that: appsmith_service.status.ActiveState == 'active'
+        fail_msg: "appsmith.service not active ({{ appsmith_service.status.ActiveState }})"
+        success_msg: "appsmith.service is active"
+
+    - name: Retrieve Appsmith service log for debugging
+      when: appsmith_debug_service_enabled | bool
+      ansible.builtin.command:
+        cmd: journalctl -xeu appsmith.service
+      changed_when: false
+
+    - name: Wait for Appsmith HTTP endpoint to respond (up to 10m)
+      ansible.builtin.uri:
+        url: "http://localhost:80/"
+        method: GET
+        status_code: [200, 302]
+        follow_redirects: none
+      register: appsmith_endpoint
+      until: appsmith_endpoint.status in [200, 302]
+      retries: 120
+      delay: 5
+
+    - name: Assert Appsmith HTTP endpoint responds
+      ansible.builtin.assert:
+        that: appsmith_endpoint.status in [200, 302]
+        fail_msg: "Appsmith did not respond as expected ({{ appsmith_endpoint.status | default('no response') }})"
+        success_msg: "Appsmith responded with {{ appsmith_endpoint.status }}"
+
+    - name: Show Appsmith systemd service status summary
+      ansible.builtin.debug:
+        msg:
+          - "Appsmith systemd: {{ appsmith_service.status.ActiveState }}"
+          - "Appsmith HTTP: {{ appsmith_endpoint.status }}"
