@@ -1,14 +1,40 @@
 # SPDX-FileCopyrightText: 2026 Suguru Hirahara
 # SPDX-FileCopyrightText: 2026 spatterlight
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Verify Appsmith systemd service
+- name: Verify Appsmith
   hosts: all
   become: true
   gather_facts: false
+
+  vars:
+    appsmith_verify_base_url: "http://localhost:{{ appsmith_container_http_host_bind_port }}"
+
+    # The container name that the role derives from `appsmith_identifier`.
+    # Role defaults are not in scope in a verify play, so it is spelled out.
+    appsmith_verify_container: appsmith
+
+    # The editor process substitutes the running environment into the page it
+    # serves, as arguments to its own `parseConfig()` helper. The image on its
+    # own leaves this one empty; `APPSMITH_CLIENT_LOG_LEVEL=error`, which comes
+    # out of the role's `env` file, is what puts a value in it. Asserting on it
+    # is therefore a check that the role's configuration reached the editor
+    # process, and not merely that some Appsmith is answering.
+    appsmith_verify_editor_log_level_marker: "parseConfig('error')"
+
   tasks:
+    # Role defaults are not in scope in a verify play, but the version that
+    # Renovate bumps lives in them and is what the running Appsmith is checked
+    # against below. Only leaf literals may be read out of this - anything
+    # Jinja-derived would be resolved against an empty namespace.
+    - name: Load the Appsmith role defaults
+      ansible.builtin.include_vars:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+        name: appsmith_defaults
+
     - name: Wait for Appsmith service to become active (up to 180s)
       ansible.builtin.systemd:
         name: appsmith.service
@@ -29,25 +55,177 @@
         cmd: journalctl -xeu appsmith.service
       changed_when: false
 
-    - name: Wait for Appsmith HTTP endpoint to respond (up to 10m)
+    # An active systemd unit only means the container was created, and for this
+    # image that is a long way from serving. It runs six processes under
+    # supervisord - an embedded MongoDB, Postgres and Redis, the Java server,
+    # the editor and the RTS - and the editor answers on the HTTP port within
+    # seconds of the container starting, long before any of the rest are up.
+    #
+    # While that is the case it serves a holding page that says "Appsmith is
+    # starting", with status 200. Anything that merely asks the root path for a
+    # 200 therefore passes against an Appsmith that is not up yet, which is why
+    # the wait below is on an endpoint the editor cannot answer by itself: every
+    # `/api/` path is proxied to the Java server and answers 502 until that
+    # server has finished booting.
+    #
+    # Ten minutes is deliberately generous. Roughly five of them are spent
+    # before supervisord is even started: the entrypoint tries to initialize the
+    # embedded Postgres, cannot (see below), and spends 300 one-second attempts
+    # waiting for it before giving up and bringing the rest of Appsmith up.
+    #
+    # The reason it cannot is that this role creates the directory it bind-mounts
+    # at /appsmith-stacks as 0750 owned by `appsmith_uid`, while the embedded
+    # Postgres runs as its own `postgres` user (uid 104) and so cannot traverse
+    # it - `initdb` fails with "Permission denied". The image's own copy of that
+    # directory is 0777, which is why this does not happen without the mount.
+    # Appsmith itself is unaffected apart from the delay and the loss of its
+    # mock-database feature, so this waits the stall out rather than hiding it.
+    - name: Wait for the Appsmith server to answer its health endpoint (up to 10m)
       ansible.builtin.uri:
-        url: "http://localhost:80/"
+        url: "{{ appsmith_verify_base_url }}/api/v1/health"
         method: GET
-        status_code: [200, 302]
-        follow_redirects: none
-      register: appsmith_endpoint
-      until: appsmith_endpoint.status in [200, 302]
+        # Widened so that the statuses seen on the way up are recorded rather
+        # than raised, leaving the assert below to decide what is acceptable.
+        status_code: [200, 502, 503]
+        return_content: true
+      register: appsmith_health
+      until: appsmith_health.status == 200
       retries: 120
       delay: 5
 
-    - name: Assert Appsmith HTTP endpoint responds
+    - name: Assert the Appsmith server reports all systems up
       ansible.builtin.assert:
-        that: appsmith_endpoint.status in [200, 302]
-        fail_msg: "Appsmith did not respond as expected ({{ appsmith_endpoint.status | default('no response') }})"
-        success_msg: "Appsmith responded with {{ appsmith_endpoint.status }}"
+        that:
+          - appsmith_health.status == 200
+          # Defaulted, so that a non-200 (whose body is not JSON) reports itself
+          # as a failed assertion rather than as an undefined-variable error.
+          - appsmith_health.json.data | default('') == 'All systems are up'
+        fail_msg: "The Appsmith server did not report itself healthy: {{ appsmith_health.status }} {{ appsmith_health.json | default('') }}"
+        success_msg: "The Appsmith server reports: {{ appsmith_health.json.data }}"
 
-    - name: Show Appsmith systemd service status summary
+    # The server keeps its own state in the embedded MongoDB and runs its
+    # migrations against it on first boot. This endpoint is served out of that
+    # database - it is the one unauthenticated route that reads it - and the
+    # migration status it reports is what says those migrations finished rather
+    # than merely started. A server that came up but could not reach its
+    # data-store answers 502 or 401 here instead.
+    - name: Wait for Appsmith to finish its database migrations (up to 5m)
+      ansible.builtin.uri:
+        url: "{{ appsmith_verify_base_url }}/api/v1/tenants/current"
+        method: GET
+        status_code: [200, 401, 502, 503]
+        return_content: true
+      register: appsmith_tenant
+      until: >-
+        appsmith_tenant.status == 200
+        and appsmith_tenant.json.data.organizationConfiguration.migrationStatus | default('') == 'COMPLETED'
+      retries: 60
+      delay: 5
+
+    - name: Assert Appsmith completed its database migrations
+      ansible.builtin.assert:
+        that:
+          - appsmith_tenant.status == 200
+          - appsmith_tenant.json.data.organizationConfiguration.migrationStatus | default('') == 'COMPLETED'
+        fail_msg: "Appsmith did not complete its migrations: {{ appsmith_tenant.json | default('no response') }}"
+        success_msg: "Appsmith completed its migrations against its embedded MongoDB"
+
+    # Written by the build that produced the image and served by the editor
+    # process, so it names the image that is actually running rather than the
+    # one the role asked for.
+    - name: Retrieve the Appsmith build information
+      ansible.builtin.uri:
+        url: "{{ appsmith_verify_base_url }}/info"
+        method: GET
+        status_code: [200]
+        return_content: true
+      register: appsmith_info
+
+    - name: Assert the running Appsmith is the version this role installs
+      ansible.builtin.assert:
+        that: appsmith_info.json.version == appsmith_defaults.appsmith_version
+        fail_msg: "Appsmith reports {{ appsmith_info.json.version }}, expected {{ appsmith_defaults.appsmith_version }}"
+        success_msg: "Appsmith reports {{ appsmith_info.json.version }}"
+
+    # Not followed, so that a redirect away from the editor - to a wizard, or to
+    # an error page - fails here instead of being quietly resolved into a 200.
+    - name: Retrieve the Appsmith editor
+      ansible.builtin.uri:
+        url: "{{ appsmith_verify_base_url }}/"
+        method: GET
+        follow_redirects: none
+        status_code: [200]
+        return_content: true
+      register: appsmith_editor
+
+    # The editor stamps the running environment into this page at request time,
+    # so these say something the holding page cannot: that the real editor
+    # bundle is being served, that the process behind it is the version this
+    # role pins, and that it read the role's `env` file.
+    - name: Assert the Appsmith editor is served and configured by this role
+      ansible.builtin.assert:
+        that:
+          - "'Appsmith is starting' not in appsmith_editor.content"
+          - "'window.APPSMITH_FEATURE_CONFIGS' in appsmith_editor.content"
+          - "\"parseConfig('\" ~ appsmith_defaults.appsmith_version ~ \"')\" in appsmith_editor.content"
+          - appsmith_verify_editor_log_level_marker in appsmith_editor.content
+        fail_msg: "The Appsmith editor did not serve a configured {{ appsmith_defaults.appsmith_version }} bundle"
+        success_msg: "The Appsmith editor serves its {{ appsmith_defaults.appsmith_version }} bundle, configured from the role's env file"
+
+    # The other half of the same question, asked of the Java server rather than
+    # the editor. `APPSMITH_DISABLE_TELEMETRY=true` is set by the role and by
+    # nothing in the image, which reports `enableTelemetry: true` when left to
+    # itself - so a false here is the role's `env` file having reached the
+    # server process.
+    #
+    # `isEmptyInstance` is asserted as true rather than worked around: this role
+    # does not create an administrator, and a freshly installed Appsmith
+    # legitimately has none. Claiming otherwise would be the test lying about
+    # what the role does.
+    - name: Retrieve the Appsmith session state
+      ansible.builtin.uri:
+        url: "{{ appsmith_verify_base_url }}/api/v1/users/me"
+        method: GET
+        status_code: [200]
+        return_content: true
+      register: appsmith_session
+
+    - name: Assert the role's configuration reached the Appsmith server process
+      ansible.builtin.assert:
+        that:
+          - not appsmith_session.json.data.enableTelemetry | bool
+          - appsmith_session.json.data.isAnonymous | bool
+          - appsmith_session.json.data.isEmptyInstance | bool
+        fail_msg: "The Appsmith server did not read the role's configuration: {{ appsmith_session.json.data }}"
+        success_msg: "The Appsmith server has telemetry disabled, as the role's env file asks"
+
+    # The image ships `healthcheck.sh` as its Docker health-check, and it checks
+    # the editor, the RTS and the Java server rather than just the port. The
+    # role wires an interval up for it, so this observes the role's own
+    # health-checking exactly as a consumer of the role would get it.
+    - name: Wait for the Appsmith container to report itself healthy (up to 5m)
+      ansible.builtin.command:
+        cmd: "docker inspect {{ appsmith_verify_container }}"
+      register: appsmith_container_inspect
+      changed_when: false
+      until: (appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | unique | list) == ['healthy']
+      retries: 60
+      delay: 5
+
+    - name: Assert the Appsmith container reports itself healthy
+      ansible.builtin.assert:
+        that: (appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | unique | list) == ['healthy']
+        fail_msg: >-
+          The Appsmith container is not healthy:
+          {{ appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | list }}
+        success_msg: "The Appsmith container passes its own health-check, so its editor, RTS and server are all up"
+
+    - name: Show Appsmith verification summary
       ansible.builtin.debug:
         msg:
           - "Appsmith systemd: {{ appsmith_service.status.ActiveState }}"
-          - "Appsmith HTTP: {{ appsmith_endpoint.status }}"
+          - "Appsmith server: {{ appsmith_health.json.data }}"
+          - "Appsmith version: {{ appsmith_info.json.version }}"
+          - "Appsmith migrations: {{ appsmith_tenant.json.data.organizationConfiguration.migrationStatus }}"
+          - "Appsmith telemetry: {{ appsmith_session.json.data.enableTelemetry }}"
+          - "Appsmith container health: {{ appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | list }}"
