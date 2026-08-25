@@ -205,7 +205,7 @@
     # health-checking exactly as a consumer of the role would get it.
     - name: Wait for the Appsmith container to report itself healthy (up to 5m)
       ansible.builtin.command:
-        cmd: "docker inspect {{ appsmith_verify_container }}"
+        cmd: "docker container inspect {{ appsmith_verify_container }}"
       register: appsmith_container_inspect
       changed_when: false
       until: (appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | unique | list) == ['healthy']
