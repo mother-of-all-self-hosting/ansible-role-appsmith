@@ -26,11 +26,10 @@
     appsmith_verify_editor_log_level_marker: "parseConfig('error')"
 
   tasks:
-    # Role defaults are not in scope in a verify play, but the version that
-    # Renovate bumps lives in them and is what the running Appsmith is checked
-    # against below. Only leaf literals may be read out of this - anything
-    # Jinja-derived would be resolved against an empty namespace.
-    - name: Load the Appsmith role defaults
+    # The role is not included in this playbook, so its defaults are not in
+    # scope. Reading defaults/main.yml directly ties the version assertion
+    # below.
+    - name: Load the role defaults
       ansible.builtin.include_vars:
         file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
         name: appsmith_defaults
@@ -144,7 +143,7 @@
     - name: Assert the running Appsmith is the version this role installs
       ansible.builtin.assert:
         that: appsmith_info.json.version == appsmith_defaults.appsmith_version
-        fail_msg: "Appsmith reports {{ appsmith_info.json.version }}, expected {{ appsmith_defaults.appsmith_version }}"
+        fail_msg: "Appsmith reports {{ appsmith_info.json.version | default('none') }}, expected {{ appsmith_defaults.appsmith_version }}"
         success_msg: "Appsmith reports {{ appsmith_info.json.version }}"
 
     # Not followed, so that a redirect away from the editor - to a wizard, or to
