@@ -219,12 +219,12 @@
           {{ appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | list }}
         success_msg: "The Appsmith container passes its own health-check, so its editor, RTS and server are all up"
 
-    - name: Show Appsmith verification summary
+    - name: Show the Appsmith verification summary
       ansible.builtin.debug:
         msg:
           - "Appsmith systemd: {{ appsmith_service.status.ActiveState }}"
-          - "Appsmith server: {{ appsmith_health.json.data }}"
           - "Appsmith version: {{ appsmith_info.json.version }}"
+          - "Appsmith server: {{ appsmith_health.json.data }}"
           - "Appsmith migrations: {{ appsmith_tenant.json.data.organizationConfiguration.migrationStatus }}"
           - "Appsmith telemetry: {{ appsmith_session.json.data.enableTelemetry }}"
           - "Appsmith container health: {{ appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | list }}"
