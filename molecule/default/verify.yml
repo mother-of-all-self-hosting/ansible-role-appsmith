@@ -102,6 +102,23 @@
         fail_msg: "The Appsmith server did not report itself healthy: {{ appsmith_health.status }} {{ appsmith_health.json | default('') }}"
         success_msg: "The Appsmith server reports: {{ appsmith_health.json.data }}"
 
+    # Written by the build that produced the image and served by the editor
+    # process, so it names the image that is actually running rather than the
+    # one the role asked for.
+    - name: Retrieve the Appsmith build information
+      ansible.builtin.uri:
+        url: "{{ appsmith_verify_base_url }}/info"
+        method: GET
+        status_code: [200]
+        return_content: true
+      register: appsmith_info
+
+    - name: Assert the running Appsmith is the version this role installs
+      ansible.builtin.assert:
+        that: appsmith_info.json.version == appsmith_defaults.appsmith_version
+        fail_msg: "Appsmith reports {{ appsmith_info.json.version | default('none') }}, expected {{ appsmith_defaults.appsmith_version }}"
+        success_msg: "Appsmith reports {{ appsmith_info.json.version }}"
+
     # The server keeps its own state in the embedded MongoDB and runs its
     # migrations against it on first boot. This endpoint is served out of that
     # database - it is the one unauthenticated route that reads it - and the
@@ -128,23 +145,6 @@
           - appsmith_tenant.json.data.organizationConfiguration.migrationStatus | default('') == 'COMPLETED'
         fail_msg: "Appsmith did not complete its migrations: {{ appsmith_tenant.json | default('no response') }}"
         success_msg: "Appsmith completed its migrations against its embedded MongoDB"
-
-    # Written by the build that produced the image and served by the editor
-    # process, so it names the image that is actually running rather than the
-    # one the role asked for.
-    - name: Retrieve the Appsmith build information
-      ansible.builtin.uri:
-        url: "{{ appsmith_verify_base_url }}/info"
-        method: GET
-        status_code: [200]
-        return_content: true
-      register: appsmith_info
-
-    - name: Assert the running Appsmith is the version this role installs
-      ansible.builtin.assert:
-        that: appsmith_info.json.version == appsmith_defaults.appsmith_version
-        fail_msg: "Appsmith reports {{ appsmith_info.json.version | default('none') }}, expected {{ appsmith_defaults.appsmith_version }}"
-        success_msg: "Appsmith reports {{ appsmith_info.json.version }}"
 
     # Not followed, so that a redirect away from the editor - to a wizard, or to
     # an error page - fails here instead of being quietly resolved into a 200.
