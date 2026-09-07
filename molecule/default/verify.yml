@@ -15,7 +15,7 @@
 
     # The container name that the role derives from `appsmith_identifier`.
     # Role defaults are not in scope in a verify play, so it is spelled out.
-    appsmith_verify_container: appsmith
+    appsmith_container: appsmith
 
     # The editor process substitutes the running environment into the page it
     # serves, as arguments to its own `parseConfig()` helper. The image on its
@@ -204,19 +204,19 @@
     # health-checking exactly as a consumer of the role would get it.
     - name: Wait for the Appsmith container to report itself healthy (up to 5m)
       ansible.builtin.command:
-        cmd: "docker container inspect {{ appsmith_verify_container }}"
-      register: appsmith_container_inspect
+        cmd: "docker container inspect {{ appsmith_container }}"
+      register: appsmith_container_raw
       changed_when: false
-      until: (appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | unique | list) == ['healthy']
+      until: (appsmith_container_raw.stdout | from_json | map(attribute='State.Health.Status') | unique | list) == ['healthy']
       retries: 60
       delay: 5
 
     - name: Assert the Appsmith container reports itself healthy
       ansible.builtin.assert:
-        that: (appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | unique | list) == ['healthy']
+        that: (appsmith_container_raw.stdout | from_json | map(attribute='State.Health.Status') | unique | list) == ['healthy']
         fail_msg: >-
           The Appsmith container is not healthy:
-          {{ appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | list }}
+          {{ appsmith_container_raw.stdout | from_json | map(attribute='State.Health.Status') | list }}
         success_msg: "The Appsmith container passes its own health-check, so its editor, RTS and server are all up"
 
     - name: Show the Appsmith verification summary
@@ -227,4 +227,4 @@
           - "Appsmith server: {{ appsmith_health.json.data }}"
           - "Appsmith migrations: {{ appsmith_tenant.json.data.organizationConfiguration.migrationStatus }}"
           - "Appsmith telemetry: {{ appsmith_session.json.data.enableTelemetry }}"
-          - "Appsmith container health: {{ appsmith_container_inspect.stdout | from_json | map(attribute='State.Health.Status') | list }}"
+          - "Appsmith container health: {{ appsmith_container_raw.stdout | from_json | map(attribute='State.Health.Status') | list }}"
