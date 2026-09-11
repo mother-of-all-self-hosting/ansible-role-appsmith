@@ -25,6 +25,9 @@
     # process, and not merely that some Appsmith is answering.
     appsmith_verify_editor_log_level_marker: "parseConfig('error')"
 
+    appsmith_verify_units:
+      - appsmith.service
+
   tasks:
     - name: Verify that Appsmith works
       block:
@@ -36,13 +39,14 @@
             file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
             name: appsmith_defaults
 
-        - name: Wait for the Appsmith systemd service to become active (up to 180s)
+        - name: Wait for the Appsmith systemd services to become active (up to 180s each)
           ansible.builtin.systemd_service:
-            name: appsmith.service
-          register: appsmith_service
-          until: appsmith_service.status.ActiveState == 'active'
+            name: "{{ item }}"
+          register: appsmith_services
+          until: appsmith_services.status.ActiveState == 'active'
           retries: 36
           delay: 5
+          loop: "{{ appsmith_verify_units }}"
           # So that giving up is reported by the assertion below rather than as a
           # wall of systemd unit properties.
           failed_when: false
@@ -50,17 +54,20 @@
         # `Restart=always` in the systemd unit means that even a container which crashes
         # and gets restarted reads as active here, so this is a precondition rather than
         # a result.
-        - name: Assert the Appsmith systemd service is active
+        - name: Assert the Appsmith systemd services are active
           ansible.builtin.assert:
-            that: appsmith_service.status.ActiveState == 'active'
-            fail_msg: "appsmith.service is not active ({{ appsmith_service.status.ActiveState }})"
-            success_msg: "appsmith.service is active"
+            that: appsmith_services.results | map(attribute='status.ActiveState') | unique | list == ['active']
+            fail_msg: >-
+              Not every service is active:
+              {{ dict(appsmith_verify_units | zip(appsmith_services.results | map(attribute='status.ActiveState'))) }}
+            success_msg: "Every systemd service is active"
 
-        - name: Retrieve the Appsmith systemd service log for debugging
+        - name: Retrieve the Appsmith systemd services log for debugging
           when: appsmith_debug_service_enabled | bool
           ansible.builtin.command:
-            cmd: journalctl --no-pager --output=cat --unit=appsmith.service
+            cmd: "journalctl --no-pager --output=cat --unit={{ item }}"
           changed_when: false
+          loop: "{{ appsmith_verify_units }}"
 
         # An active systemd unit only means the container was created, and for this
         # image that is a long way from serving. It runs six processes under
@@ -230,7 +237,7 @@
         - name: Show the Appsmith verification summary
           ansible.builtin.debug:
             msg:
-              - "Appsmith systemd: {{ appsmith_service.status.ActiveState }}"
+              - "Appsmith systemd: {% for unit, state in appsmith_verify_units | zip(appsmith_services.results | map(attribute='status.ActiveState')) %}{{ unit }} ({{ state }}){% if not loop.last %}, {% endif %}{% endfor %}"
               - "Appsmith version: {{ appsmith_info.json.version }}"
               - "Appsmith server: {{ appsmith_health.json.data }}"
               - "Appsmith migrations: {{ appsmith_tenant.json.data.organizationConfiguration.migrationStatus }}"
