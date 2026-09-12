@@ -94,7 +94,7 @@
         # directory is 0777, which is why this does not happen without the mount.
         # Appsmith itself is unaffected apart from the delay and the loss of its
         # mock-database feature, so this waits the stall out rather than hiding it.
-        - name: Wait for Appsmith to report itself healthy (up to 180s)
+        - name: Wait for Appsmith to report itself healthy (up to 10m)
           ansible.builtin.uri:
             url: "{{ appsmith_verify_base_url }}/api/v1/health"
             method: GET
@@ -104,7 +104,7 @@
             return_content: true
           register: appsmith_health
           until: appsmith_health.status == 200
-          retries: 36
+          retries: 120
           delay: 5
           # So that giving up is reported by the assertion below rather than as a
           # wall of systemd unit properties.
