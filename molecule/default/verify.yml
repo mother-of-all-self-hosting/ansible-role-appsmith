@@ -94,7 +94,7 @@
         # directory is 0777, which is why this does not happen without the mount.
         # Appsmith itself is unaffected apart from the delay and the loss of its
         # mock-database feature, so this waits the stall out rather than hiding it.
-        - name: Wait for the Appsmith server to answer its health endpoint (up to 10m)
+        - name: Wait for Appsmith to report itself healthy (up to 180s)
           ansible.builtin.uri:
             url: "{{ appsmith_verify_base_url }}/api/v1/health"
             method: GET
@@ -104,18 +104,21 @@
             return_content: true
           register: appsmith_health
           until: appsmith_health.status == 200
-          retries: 120
+          retries: 36
           delay: 5
+          # So that giving up is reported by the assertion below rather than as a
+          # wall of systemd unit properties.
+          failed_when: false
 
-        - name: Assert the Appsmith server reports all systems up
+        - name: Assert Appsmith reports itself healthy
           ansible.builtin.assert:
             that:
               - appsmith_health.status == 200
               # Defaulted, so that a non-200 (whose body is not JSON) reports itself
               # as a failed assertion rather than as an undefined-variable error.
               - appsmith_health.json.data | default('') == 'All systems are up'
-            fail_msg: "The Appsmith server did not report itself healthy: {{ appsmith_health.status }} {{ appsmith_health.json | default('') }}"
-            success_msg: "The Appsmith server reports: {{ appsmith_health.json.data }}"
+            fail_msg: "Appsmith did not report itself healthy: {{ appsmith_health.status }} {{ appsmith_health.json | default('no response') }}"
+            success_msg: "Appsmith reports itself healthy"
 
         # Written by the build that produced the image and served by the editor
         # process, so it names the image that is actually running rather than the
@@ -217,22 +220,25 @@
         # the editor, the RTS and the Java server rather than just the port. The
         # role wires an interval up for it, so this observes the role's own
         # health-checking exactly as a consumer of the role would get it.
-        - name: Wait for the Appsmith container to report itself healthy (up to 5m)
+        - name: Wait for Appsmith to report itself healthy (up to 180s)
           ansible.builtin.command:
             cmd: "docker container inspect {{ appsmith_container }}"
           register: appsmith_container_raw
           changed_when: false
           until: (appsmith_container_raw.stdout | from_json | map(attribute='State.Health.Status') | unique | list) == ['healthy']
-          retries: 60
+          retries: 36
           delay: 5
+          # So that giving up is reported by the assertion below rather than as a
+          # wall of systemd unit properties.
+          failed_when: false
 
-        - name: Assert the Appsmith container reports itself healthy
+        - name: Assert Appsmith reports itself healthy
           ansible.builtin.assert:
             that: (appsmith_container_raw.stdout | from_json | map(attribute='State.Health.Status') | unique | list) == ['healthy']
             fail_msg: >-
               The Appsmith container is not healthy:
               {{ appsmith_container_raw.stdout | from_json | map(attribute='State.Health.Status') | list }}
-            success_msg: "The Appsmith container passes its own health-check, so its editor, RTS and server are all up"
+            success_msg: "Appsmith reports itself healthy"
 
         - name: Show the Appsmith verification summary
           ansible.builtin.debug:
