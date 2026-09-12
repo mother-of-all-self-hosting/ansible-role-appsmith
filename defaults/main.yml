@@ -227,6 +227,10 @@ appsmith_container_cleanup_command: |
   echo "Failed to remove stale container {{ appsmith_identifier }} after {{ appsmith_container_cleanup_timeout_seconds }} attempts" >&2;
   exit 1
 
+# Specify Redis configuration
+appsmith_redis_hostname: ""
+appsmith_redis_port: 6379
+
 # Specify the timezone
 appsmith_environment_variables_tz: UTC
 
@@ -270,6 +274,8 @@ appsmith_environment_variable_appsmith_mail_from: ""
 # Controls environment variables for email server features
 appsmith_environment_variable_appsmith_mail_smtp_auth: ""
 appsmith_environment_variable_appsmith_mail_smtp_tls_enabled: ""
+
+appsmith_environment_variable_appsmith_redis_url: redis://{{ appsmith_redis_hostname }}:{{ appsmith_redis_port }}
 
 # Controls the APPSMITH_DISABLE_TELEMETRY environment variable
 appsmith_environment_variable_appsmith_disable_telemetry: true

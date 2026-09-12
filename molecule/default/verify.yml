@@ -27,6 +27,7 @@
 
     appsmith_verify_units:
       - appsmith.service
+      - valkey.service
 
   tasks:
     - name: Verify that Appsmith works
@@ -70,8 +71,8 @@
           loop: "{{ appsmith_verify_units }}"
 
         # An active systemd unit only means the container was created, and for this
-        # image that is a long way from serving. It runs six processes under
-        # supervisord - an embedded MongoDB, Postgres and Redis, the Java server,
+        # image that is a long way from serving. It runs five processes under
+        # supervisord - an embedded MongoDB, Postgres, the Java server,
         # the editor and the RTS - and the editor answers on the HTTP port within
         # seconds of the container starting, long before any of the rest are up.
         #

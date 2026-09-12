@@ -59,6 +59,23 @@ After adjusting the hostname, make sure to adjust your DNS records to point the 
 
 **Note**: hosting Appsmith under a subpath (by configuring the `appsmith_path_prefix` variable) does not seem to be possible due to Appsmith's technical limitations.
 
+### Configuring a Redis database (optional)
+
+By default Appsmith runs an embedded Redis instance for session management and caching. To enhance performance, scalability, and reliability, you can optionally enable an external [Redis](https://redis.io/) database for the Appsmith instance. [Valkey](https://valkey.io/) can also be used instead.
+
+See [this page](https://docs.appsmith.com/getting-started/setup/instance-configuration/external-redis) on the official documentation for details.
+
+To enable the Redis database for Appsmith, add the following configuration to your `vars.yml` file:
+
+```yaml
+appsmith_redis_hostname: YOUR_REDIS_SERVER_HOSTNAME_HERE
+appsmith_redis_port: 6379
+```
+
+Make sure to replace `YOUR_REDIS_SERVER_HOSTNAME_HERE` and `YOUR_REDIS_SERVER_PASSWORD_HERE` with your own values.
+
+If you are looking for an Ansible role for Redis, you can check out [ansible-role-redis](https://github.com/mother-of-all-self-hosting/ansible-role-redis) maintained by the [Mother-of-All-Self-Hosting (MASH)](https://github.com/mother-of-all-self-hosting) team. The role for Valkey ([ansible-role-valkey](https://github.com/mother-of-all-self-hosting/ansible-role-valkey)) is available as well.
+
 ### Extending the configuration
 
 There are some additional things you may wish to configure about the service.
