@@ -30,6 +30,7 @@ provisioner:
       all:
         # Helper variables
         appsmith_debug_service_enabled: false
+        appsmith_restarts_check_enabled: true
 
         # Variables for Appsmith
         appsmith_uid: 1000
