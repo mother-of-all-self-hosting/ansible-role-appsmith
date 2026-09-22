@@ -63,7 +63,7 @@ After adjusting the hostname, make sure to adjust your DNS records to point the 
 
 By default Appsmith runs an embedded Redis instance for session management and caching. To enhance performance, scalability, and reliability, you can optionally enable an external [Redis](https://redis.io/) database for the Appsmith instance. [Valkey](https://valkey.io/) can also be used instead.
 
-See [this page](https://docs.appsmith.com/getting-started/setup/instance-configuration/external-redis) on the official documentation for details.
+Refer to [this page](https://docs.appsmith.com/getting-started/setup/instance-configuration/external-redis) on the official documentation for details.
 
 To enable the Redis database for Appsmith, add the following configuration to your `vars.yml` file:
 
