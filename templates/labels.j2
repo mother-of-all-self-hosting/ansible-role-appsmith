@@ -13,6 +13,11 @@ traefik.docker.network={{ appsmith_container_labels_traefik_docker_network }}
 
 {% set middlewares = [] %}
 
+{% if appsmith_container_labels_traefik_middleware_basic_auth_enabled %}
+{% set middlewares = middlewares + [appsmith_identifier + '-basic-auth'] %}
+traefik.http.middlewares.{{ appsmith_identifier }}-basic-auth.basicauth.users={{ appsmith_container_labels_traefik_middleware_basic_auth_users }}
+{% endif %}
+
 {% if appsmith_container_labels_traefik_path_prefix != '/' %}
 traefik.http.middlewares.{{ appsmith_identifier }}-slashless-redirect.redirectregex.regex=^({{ appsmith_container_labels_traefik_path_prefix | quote }})$
 traefik.http.middlewares.{{ appsmith_identifier }}-slashless-redirect.redirectregex.replacement=${1}/
