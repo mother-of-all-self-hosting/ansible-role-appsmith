@@ -19,7 +19,7 @@ traefik.http.middlewares.{{ appsmith_identifier }}-basic-auth.basicauth.users={{
 {% endif %}
 
 {% if appsmith_container_labels_traefik_path_prefix != '/' %}
-traefik.http.middlewares.{{ appsmith_identifier }}-slashless-redirect.redirectregex.regex=^({{ appsmith_container_labels_traefik_path_prefix | quote }})$
+traefik.http.middlewares.{{ appsmith_identifier }}-slashless-redirect.redirectregex.regex=^(https?://[^/]+{{ appsmith_container_labels_traefik_path_prefix | regex_escape }})$
 traefik.http.middlewares.{{ appsmith_identifier }}-slashless-redirect.redirectregex.replacement=${1}/
 {% set middlewares = middlewares + [appsmith_identifier + '-slashless-redirect'] %}
 {% endif %}
